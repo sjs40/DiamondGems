@@ -5,7 +5,9 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 
-import pandas as pd
+import pytest
+
+pd = pytest.importorskip("pandas")
 
 from diamond_gems.outputs import excel_export
 
@@ -49,4 +51,3 @@ def test_export_excel_dashboard_does_not_mutate_input_tables(tmp_path: Path) -> 
 
     for name, original_records in snapshots.items():
         assert tables[name].to_dict("records") == original_records
-

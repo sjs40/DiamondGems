@@ -5,7 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
-import streamlit as st
+try:
+    import streamlit as st
+except ModuleNotFoundError:  # pragma: no cover - optional UI dependency
+    st = None
 
 OUTPUTS_DIR = Path("data/outputs")
 
@@ -152,6 +155,8 @@ def _show_trend_scores_section() -> None:
 
 
 def main() -> None:
+    if st is None:
+        raise ModuleNotFoundError("streamlit is not installed. Install with: python -m pip install -e .[ui]")
     st.set_page_config(page_title="DiamondGems Dashboard", layout="wide")
     st.title("DiamondGems Dashboard")
     st.caption("Basic MVP dashboard for pitcher starts, flags, and content ideas.")

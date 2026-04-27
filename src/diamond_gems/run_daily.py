@@ -257,17 +257,20 @@ def main(argv: list[str] | None = None) -> int:
     written["pitcher_trend_scores"] = export_table(pitcher_trend_scores, "pitcher_trend_scores", include_csv=True, include_parquet=True)
     written["pitcher_flags"] = export_table(pitcher_flags, "pitcher_flags", include_csv=True, include_parquet=False)
     written["content_ideas"] = export_table(content_ideas, "content_ideas", include_csv=True, include_parquet=False)
-    written["excel_dashboard"] = export_excel_dashboard(
-        {
-            "pitcher_start_summary": pitcher_start_summary,
-            "pitcher_pitch_type_summary": pitcher_pitch_type_summary,
-            "pitcher_velocity_deltas": pitcher_velocity_deltas,
-            "pitcher_usage_deltas": pitcher_usage_deltas,
-            "pitcher_trend_scores": pitcher_trend_scores,
-            "pitcher_flags": pitcher_flags,
-            "content_ideas": content_ideas,
-        }
-    )
+    try:
+        written["excel_dashboard"] = export_excel_dashboard(
+            {
+                "pitcher_start_summary": pitcher_start_summary,
+                "pitcher_pitch_type_summary": pitcher_pitch_type_summary,
+                "pitcher_velocity_deltas": pitcher_velocity_deltas,
+                "pitcher_usage_deltas": pitcher_usage_deltas,
+                "pitcher_trend_scores": pitcher_trend_scores,
+                "pitcher_flags": pitcher_flags,
+                "content_ideas": content_ideas,
+            }
+        )
+    except ModuleNotFoundError:
+        written["excel_dashboard"] = None
 
     print("Export summary:")
     for name, table in [

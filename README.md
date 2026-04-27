@@ -71,6 +71,13 @@ DiamondGems/
     test_*.py
 ```
 
+## Design choices for faster installs and cleaner structure
+
+- Core runtime dependencies are kept small so `pip install -e .` is faster for pipeline-only usage.
+- Dev/test tools (`pytest`, `ruff`) are in the `dev` extra.
+- Streamlit is in a separate `ui` extra so headless/CLI-only users do not pay UI install cost.
+- Module boundaries follow data grain and responsibility (transform vs features vs outputs vs app).
+
 ## Windows setup instructions
 
 1. Create a virtual environment:
@@ -86,16 +93,28 @@ If `python` is not found on your machine, use `py` instead of `python` in all co
 
 ## Install dependencies
 
-Install project dependencies:
+Fastest install (pipeline only, no test/UI extras):
 
 ```bash
 python -m pip install -e .
 ```
 
-Optional dev extras:
+Install dev/test tools only when needed:
 
 ```bash
 python -m pip install -e .[dev]
+```
+
+Install Streamlit UI dependencies only when needed:
+
+```bash
+python -m pip install -e .[ui]
+```
+
+Install everything (convenience, but slowest):
+
+```bash
+python -m pip install -e .[all]
 ```
 
 ## End-to-end quickstart (everything you need)

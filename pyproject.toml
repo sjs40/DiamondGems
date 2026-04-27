@@ -12,9 +12,6 @@ dependencies = [
   "pandas",
   "numpy",
   "pyarrow",
-  "pytest",
-  "ruff",
-  "streamlit",
   "openpyxl",
 ]
 
@@ -22,6 +19,14 @@ dependencies = [
 dev = [
   "pytest",
   "ruff",
+]
+ui = [
+  "streamlit",
+]
+all = [
+  "pytest",
+  "ruff",
+  "streamlit",
 ]
 
 [tool.setuptools]

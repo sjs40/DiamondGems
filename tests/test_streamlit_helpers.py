@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from datetime import date
 
-import pandas as pd
+import pytest
 
+pd = pytest.importorskip("pandas")
 from app.streamlit_app import apply_date_range_filter, apply_min_numeric_filter
 
 
@@ -30,4 +31,3 @@ def test_apply_date_range_filter_filters_dates() -> None:
     )
     out = apply_date_range_filter(df, "game_date", date(2024, 4, 10), date(2024, 4, 30))
     assert out["pitcher_name"].tolist() == ["B"]
-

@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import importlib.util
 import pytest
 
 from diamond_gems.run_daily import main
@@ -45,8 +46,9 @@ def test_run_daily_creates_expected_outputs_and_handles_empty_content(tmp_path: 
         "pitcher_trend_scores.csv", "pitcher_trend_scores.parquet",
         "pitcher_flags.csv",
         "content_ideas.csv",
-        "baseball_content_dashboard.xlsx",
     ]
+    if importlib.util.find_spec("pandas") is not None:
+        expected.append("baseball_content_dashboard.xlsx")
     for name in expected:
         assert (out_dir / name).exists()
 
