@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from diamond_gems.run_daily import main
 
 
@@ -47,3 +49,11 @@ def test_run_daily_creates_expected_outputs_and_handles_empty_content(tmp_path: 
     ]
     for name in expected:
         assert (out_dir / name).exists()
+
+
+def test_run_daily_rejects_input_file_and_download_date_together(tmp_path: Path) -> None:
+    raw_csv = tmp_path / "raw.csv"
+    _write_small_csv(raw_csv)
+
+    with pytest.raises(ValueError):
+        main(["--input-file", str(raw_csv), "--download-date", "2024-04-01"])

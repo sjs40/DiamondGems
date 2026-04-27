@@ -27,6 +27,7 @@ from diamond_gems.features.times_through_order import (
 from diamond_gems.features.trend_scores import build_pitcher_trend_scores
 from diamond_gems.features.usage_deltas import build_pitcher_usage_deltas
 from diamond_gems.features.velocity_deltas import build_pitcher_velocity_deltas
+from diamond_gems.ingest.statcast_download import download_statcast_csv_for_date
 from diamond_gems.outputs.content_ideas import build_content_ideas
 from diamond_gems.outputs.excel_export import export_excel_dashboard
 from diamond_gems.outputs.export import export_table
@@ -171,9 +172,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--input-file", type=str, default=None)
     parser.add_argument("--output-dir", type=str, default=None)
     parser.add_argument("--date", type=str, default=None)
+    parser.add_argument("--download-date", type=str, default=None)
     args = parser.parse_args(argv)
 
-    input_path = Path(args.input_file) if args.input_file else _find_latest_csv(RAW_DIR)
+    if args.download_date and args.input_file:
+        raise ValueError("Use either --input-file or --download-date, not both.")
+
+    if args.download_date:
+        input_path = download_statcast_csv_for_date(args.download_date, output_dir=RAW_DIR)
+    else:
+        input_path = Path(args.input_file) if args.input_file else _find_latest_csv(RAW_DIR)
     if input_path is None or not input_path.exists():
         raise FileNotFoundError("No input CSV found. Provide --input-file or place CSV in data/raw.")
 

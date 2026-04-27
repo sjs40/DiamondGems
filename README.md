@@ -104,8 +104,8 @@ python -m pip install -e .[dev]
 2. Create/activate a virtual environment (see Windows section above).
 3. Install dependencies:
    - `python -m pip install -e .`
-4. Get pitch-level input data (see **Data download / input prep** below).
-5. Put your CSV in `data/raw/` (example: `data/raw/example_statcast.csv`).
+4. Get pitch-level input data (see **Data download / input prep** below), or use automated download with `--download-date`.
+5. Put your CSV in `data/raw/` (example: `data/raw/example_statcast.csv`) if using manual input mode.
 6. Run tests:
    - `python -m pytest`
 7. Run the daily pipeline:
@@ -117,6 +117,8 @@ python -m pip install -e .[dev]
 ## Data download / input prep
 
 This repo does **not** currently auto-download MLB data. For MVP, you bring a Statcast-like CSV and place it in `data/raw/`.
+
+> Update: you can now optionally auto-download one day of data from the runner using `--download-date YYYY-MM-DD`.
 
 ### Option A: Manual CSV export (Baseball Savant UI)
 
@@ -154,6 +156,14 @@ python -m pytest
 ```bash
 python -m diamond_gems.run_daily --input-file data/raw/example_statcast.csv
 ```
+
+Automated download mode (single day):
+
+```bash
+python -m diamond_gems.run_daily --download-date 2024-04-07
+```
+
+This downloads `data/raw/statcast_2024-04-07.csv` and runs the pipeline on that file.
 
 ## Run Streamlit
 
