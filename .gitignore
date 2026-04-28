@@ -1,0 +1,47 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python build/distribution artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Tooling and test caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Local environment/config files
+.env
+.env.*
+!.env.example
+
+# Notebook/editor/system artifacts
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+tmp/
+temp/
+
+# Generated analytics outputs
+data/processed/
+data/output/
+outputs/
+exports/
