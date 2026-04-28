@@ -111,6 +111,12 @@ Install Streamlit UI dependencies only when needed:
 python -m pip install -e .[ui]
 ```
 
+Install download helper dependencies (pybaseball) when needed:
+
+```bash
+python -m pip install -e .[data]
+```
+
 Install everything (convenience, but slowest):
 
 ```bash
@@ -146,6 +152,7 @@ Optional extras:
 ```bash
 uv pip install -e .[dev]
 uv pip install -e .[ui]
+uv pip install -e .[data]
 uv pip install -e .[all]
 ```
 
@@ -170,6 +177,7 @@ uv pip install -e .[all]
 This repo does **not** currently auto-download MLB data. For MVP, you bring a Statcast-like CSV and place it in `data/raw/`.
 
 > Update: you can now optionally auto-download one day of data from the runner using `--download-date YYYY-MM-DD`.
+> If MLB blocks automated requests (for example HTTP 403), export manually from Baseball Savant and use `--input-file`.
 
 ### Option A: Manual CSV export (Baseball Savant UI)
 
@@ -215,6 +223,16 @@ python -m diamond_gems.run_daily --download-date 2024-04-07
 ```
 
 This downloads `data/raw/statcast_2024-04-07.csv` and runs the pipeline on that file.
+
+Choose provider explicitly when needed:
+
+```bash
+python -m diamond_gems.run_daily --download-date 2024-04-07 --download-provider auto
+python -m diamond_gems.run_daily --download-date 2024-04-07 --download-provider savant
+python -m diamond_gems.run_daily --download-date 2024-04-07 --download-provider pybaseball
+```
+
+`auto` tries Baseball Savant first, then falls back to `pybaseball` if Savant is blocked.
 
 ## Run Streamlit
 

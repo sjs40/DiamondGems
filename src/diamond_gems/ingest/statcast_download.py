@@ -4,12 +4,18 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import urlencode
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 from diamond_gems.config import RAW_DIR
 
 STATCAST_CSV_ENDPOINT = "https://baseballsavant.mlb.com/statcast_search/csv"
+
+try:
+    from pybaseball import statcast as _pybaseball_statcast  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - optional dependency
+    _pybaseball_statcast = None
 
 
 def _validate_iso_date(download_date: str) -> str:
@@ -28,7 +34,38 @@ def _build_statcast_url(download_date: str) -> str:
     return f"{STATCAST_CSV_ENDPOINT}?{urlencode(params)}"
 
 
-def download_statcast_csv_for_date(download_date: str, output_dir: Path | None = None) -> Path:
+def _download_via_savant(normalized_date: str) -> bytes:
+    url = _build_statcast_url(normalized_date)
+    request = Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (DiamondGems; +https://github.com/)",
+            "Accept": "text/csv,*/*",
+            "Referer": "https://baseballsavant.mlb.com/",
+        },
+    )
+    try:
+        with urlopen(request) as response:  # nosec: URL is fixed to MLB endpoint + encoded params
+            return response.read()
+    except HTTPError as exc:
+        raise RuntimeError(
+            f"Statcast download failed for {normalized_date} with HTTP {exc.code}. "
+            "Savant endpoint may be blocked."
+        ) from exc
+
+
+def _download_via_pybaseball(normalized_date: str) -> bytes:
+    if _pybaseball_statcast is None:
+        raise RuntimeError("pybaseball is not installed. Install it to use provider='pybaseball'.")
+    frame = _pybaseball_statcast(start_dt=normalized_date, end_dt=normalized_date)
+    return frame.to_csv(index=False).encode("utf-8")
+
+
+def download_statcast_csv_for_date(
+    download_date: str,
+    output_dir: Path | None = None,
+    provider: str = "auto",
+) -> Path:
     """Download Statcast CSV for a single date and return local file path."""
     normalized_date = _validate_iso_date(download_date)
     out_dir = Path(output_dir) if output_dir is not None else Path(RAW_DIR)
@@ -38,10 +75,25 @@ def download_statcast_csv_for_date(download_date: str, output_dir: Path | None =
     if output_path.exists():
         raise FileExistsError(f"Refusing to overwrite existing raw file: {output_path}")
 
-    url = _build_statcast_url(normalized_date)
-    with urlopen(url) as response:  # nosec: URL is fixed to MLB endpoint + encoded params
-        payload = response.read()
+    valid = {"auto", "savant", "pybaseball"}
+    if provider not in valid:
+        raise ValueError(f"Unknown provider '{provider}'. Expected one of: {sorted(valid)}.")
+
+    if provider == "savant":
+        payload = _download_via_savant(normalized_date)
+    elif provider == "pybaseball":
+        payload = _download_via_pybaseball(normalized_date)
+    else:
+        try:
+            payload = _download_via_savant(normalized_date)
+        except RuntimeError as savant_exc:
+            try:
+                payload = _download_via_pybaseball(normalized_date)
+            except RuntimeError as pybaseball_exc:
+                raise RuntimeError(
+                    f"{savant_exc} Fallback via pybaseball also failed: {pybaseball_exc}. "
+                    "Use manual CSV export and pass --input-file."
+                ) from pybaseball_exc
 
     output_path.write_bytes(payload)
     return output_path
-

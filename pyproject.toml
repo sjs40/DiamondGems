@@ -23,10 +23,14 @@ dev = [
 ui = [
   "streamlit",
 ]
+data = [
+  "pybaseball",
+]
 all = [
   "pytest",
   "ruff",
   "streamlit",
+  "pybaseball",
 ]
 
 [tool.setuptools]

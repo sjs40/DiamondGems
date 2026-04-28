@@ -173,13 +173,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-dir", type=str, default=None)
     parser.add_argument("--date", type=str, default=None)
     parser.add_argument("--download-date", type=str, default=None)
+    parser.add_argument("--download-provider", type=str, default="auto")
     args = parser.parse_args(argv)
 
     if args.download_date and args.input_file:
         raise ValueError("Use either --input-file or --download-date, not both.")
 
     if args.download_date:
-        input_path = download_statcast_csv_for_date(args.download_date, output_dir=RAW_DIR)
+        input_path = download_statcast_csv_for_date(
+            args.download_date,
+            output_dir=RAW_DIR,
+            provider=args.download_provider,
+        )
     else:
         input_path = Path(args.input_file) if args.input_file else _find_latest_csv(RAW_DIR)
     if input_path is None or not input_path.exists():
