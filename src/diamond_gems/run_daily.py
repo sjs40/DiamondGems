@@ -316,19 +316,23 @@ def main(argv: list[str] | None = None) -> int:
     written["pitcher_flags"] = export_table(pitcher_flags, "pitcher_flags", include_csv=True, include_parquet=False)
     written["content_ideas"] = export_table(content_ideas, "content_ideas", include_csv=True, include_parquet=False)
     try:
-        written["excel_dashboard"] = export_excel_dashboard(
-            {
-                "pitcher_start_summary": pitcher_start_summary,
-                "pitcher_pitch_type_summary": pitcher_pitch_type_summary,
-                "pitcher_velocity_deltas": pitcher_velocity_deltas,
-                "pitcher_usage_deltas": pitcher_usage_deltas,
-                "pitcher_trend_scores": pitcher_trend_scores,
-                "pitcher_flags": pitcher_flags,
-                "content_ideas": content_ideas,
-            }
+        workbook_tables = {
+            "pitcher_start_summary": pitcher_start_summary,
+            "pitcher_pitch_type_summary": pitcher_pitch_type_summary,
+            "pitcher_velocity_deltas": pitcher_velocity_deltas,
+            "pitcher_usage_deltas": pitcher_usage_deltas,
+            "pitcher_trend_scores": pitcher_trend_scores,
+            "pitcher_flags": pitcher_flags,
+            "content_ideas": content_ideas,
+        }
+        written["excel_dashboard"] = export_excel_dashboard(workbook_tables)
+        written["excel_dashboard_visualization"] = export_excel_dashboard(
+            workbook_tables,
+            filename="baseball_content_dashboard_visualization.xlsx",
         )
     except ModuleNotFoundError:
         written["excel_dashboard"] = None
+        written["excel_dashboard_visualization"] = None
 
     print("Export summary:")
     for name, table in [

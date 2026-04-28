@@ -29,6 +29,9 @@ def test_export_excel_dashboard_creates_workbook_and_expected_sheets(tmp_path: P
 
     workbook = pd.ExcelFile(output_path)
     assert workbook.sheet_names == [
+        "Daily Pitcher Board",
+        "What Changed Today",
+        "Pitcher Detail Views",
         "Start Summary",
         "Pitch Type Summary",
         "Velocity Deltas",
