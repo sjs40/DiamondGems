@@ -90,7 +90,7 @@ def build_opponent_team_context(pitch_events):
         rows.append(row_copy)
 
     as_of_dates = sorted({row["game_date"] for row in rows})
-    teams = sorted({row.get("offense_team") for row in rows})
+    teams = sorted({row.get("offense_team") for row in rows if row.get("offense_team") is not None})
 
     output_rows: list[dict] = []
 

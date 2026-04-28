@@ -59,3 +59,12 @@ def test_pitch_effectiveness_deltas_baselines_and_flags() -> None:
 
     # low sample passthrough behavior
     assert by_id["a5"]["low_sample_flag"] is True
+
+
+def test_pitch_effectiveness_deltas_handles_missing_appearance_id_without_sort_crash() -> None:
+    rows = [
+        {"appearance_id": None, "pitcher_id": 1, "pitch_type": "FF", "game_date": "2024-04-01", "season": 2024, "pitch_count": 20, "whiff_rate": 0.2, "csw_rate": 0.2, "xwoba_allowed": 0.3, "woba_allowed": 0.3, "hard_hit_rate_allowed": 0.3},
+        {"appearance_id": "a2", "pitcher_id": 1, "pitch_type": "FF", "game_date": "2024-04-01", "season": 2024, "pitch_count": 21, "whiff_rate": 0.22, "csw_rate": 0.22, "xwoba_allowed": 0.29, "woba_allowed": 0.29, "hard_hit_rate_allowed": 0.29},
+    ]
+    output_rows = build_pitch_effectiveness_deltas(FakeDataFrame(rows)).to_dict("records")
+    assert len(output_rows) == 2

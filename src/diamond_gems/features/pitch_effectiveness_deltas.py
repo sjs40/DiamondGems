@@ -42,9 +42,23 @@ def _from_records(records: list[dict], template):
 
 
 def _to_date(value) -> datetime.date:
+    if value is None:
+        return datetime.min.date()
     if hasattr(value, "date") and not isinstance(value, str):
         return value.date() if hasattr(value, "hour") else value
-    return datetime.fromisoformat(str(value)).date()
+    try:
+        return datetime.fromisoformat(str(value)).date()
+    except ValueError:
+        return datetime.min.date()
+
+
+def _sort_key(row: dict) -> tuple:
+    return (
+        str(row.get("pitcher_id") if row.get("pitcher_id") is not None else ""),
+        str(row.get("pitch_type") if row.get("pitch_type") is not None else ""),
+        _to_date(row.get("game_date")),
+        str(row.get("appearance_id") if row.get("appearance_id") is not None else ""),
+    )
 
 
 def _is_valid(value) -> bool:
@@ -71,7 +85,7 @@ def build_pitch_effectiveness_deltas(pitch_type_summary):
     rows = _to_records(pitch_type_summary)
     rows_sorted = sorted(
         [deepcopy(row) for row in rows],
-        key=lambda r: (r.get("pitcher_id"), r.get("pitch_type"), _to_date(r.get("game_date")), r.get("appearance_id")),
+        key=_sort_key,
     )
 
     history: dict[tuple, list[dict]] = {}

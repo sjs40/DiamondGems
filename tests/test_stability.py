@@ -84,3 +84,15 @@ def test_stability_missing_components_does_not_crash() -> None:
     assert len(output_rows) == 1
     assert output_rows[0]["appearance_id"] == "a1"
     assert output_rows[0]["overall_stability_score"] == output_rows[0]["velo_stability_score"]
+
+
+def test_stability_handles_missing_appearance_id_in_sort() -> None:
+    velocity_rows = [
+        {"appearance_id": None, "pitcher_id": 1, "pitcher_name": "P1", "game_date": "2024-04-01", "strong_velo_spike_flag": True},
+        {"appearance_id": "a2", "pitcher_id": 1, "pitcher_name": "P1", "game_date": "2024-04-01", "strong_velo_spike_flag": False},
+    ]
+
+    output_rows = build_stability_scores(
+        FakeDataFrame(velocity_rows), FakeDataFrame([]), FakeDataFrame([])
+    ).to_dict("records")
+    assert len(output_rows) == 2

@@ -33,7 +33,17 @@ def _to_date(value):
         return datetime.min.date()
     if hasattr(value, "date") and not isinstance(value, str):
         return value.date() if hasattr(value, "hour") else value
-    return datetime.fromisoformat(str(value)).date()
+    try:
+        return datetime.fromisoformat(str(value)).date()
+    except ValueError:
+        return datetime.min.date()
+
+
+def _appearance_sort_key(row: dict) -> tuple:
+    return (
+        _to_date(row.get("game_date")),
+        str(row.get("appearance_id") if row.get("appearance_id") is not None else ""),
+    )
 
 
 def _score_from_streak(streak: int) -> float:
@@ -112,7 +122,7 @@ def build_stability_scores(velocity_deltas, usage_deltas, pitch_effectiveness_de
 
     output_rows: list[dict] = []
     for pitcher_id, pitcher_rows in by_pitcher.items():
-        sorted_rows = sorted(pitcher_rows, key=lambda r: (_to_date(r.get("game_date")), r.get("appearance_id")))
+        sorted_rows = sorted(pitcher_rows, key=_appearance_sort_key)
 
         velo_streak = 0
         usage_streak = 0

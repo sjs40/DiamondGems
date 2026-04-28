@@ -87,3 +87,12 @@ def test_context_excludes_same_date_and_adjusted_fallback_and_handedness() -> No
     assert adjusted["opponent_context_window"] == "season_to_date"  # fallback due to low sample
     assert abs(adjusted["adjusted_whiff_rate_diff"] - (0.40 - 0.22)) < 1e-9
     assert abs(adjusted["adjusted_whiff_rate_index"] - (0.40 / 0.22)) < 1e-9
+
+
+def test_context_handles_missing_offense_team_without_sort_error() -> None:
+    rows = [
+        {"game_date": "2024-04-01", "pitcher_throws": "R", "inning_topbot": "Top", "home_team": "AAA", "away_team": None, "swing_flag": True, "whiff_flag": False, "chase_flag": False, "in_zone_flag": True, "pa_terminal_flag": True, "strikeout_flag": False, "walk_flag": False, "called_strike_flag": False, "batted_ball_flag": False, "hard_hit_flag": False, "woba_value": 0.3, "estimated_woba_using_speedangle": 0.3},
+        {"game_date": "2024-04-02", "pitcher_throws": "R", "inning_topbot": "Bot", "home_team": "AAA", "away_team": "BBB", "swing_flag": True, "whiff_flag": False, "chase_flag": False, "in_zone_flag": True, "pa_terminal_flag": True, "strikeout_flag": False, "walk_flag": False, "called_strike_flag": False, "batted_ball_flag": False, "hard_hit_flag": False, "woba_value": 0.3, "estimated_woba_using_speedangle": 0.3},
+    ]
+    output_rows = build_opponent_team_context(FakeDataFrame(rows)).to_dict("records")
+    assert isinstance(output_rows, list)
