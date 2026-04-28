@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 
 import pandas as pd
-try:
-    import streamlit as st
-except ModuleNotFoundError:  # pragma: no cover - optional UI dependency
+
+if importlib.util.find_spec("streamlit") is not None:  # pragma: no cover - optional UI dependency
+    import streamlit as st  # type: ignore
+else:  # pragma: no cover - optional UI dependency
     st = None
 
 OUTPUTS_DIR = Path("data/outputs")
@@ -18,7 +20,12 @@ def load_output_csv(filename: str) -> tuple[pd.DataFrame | None, str | None]:
     path = OUTPUTS_DIR / filename
     if not path.exists():
         return None, f"{filename} was not found in {OUTPUTS_DIR}."
-    return pd.read_csv(path), None
+    if path.stat().st_size == 0:
+        return None, f"{filename} is empty. Run the daily pipeline to populate this table."
+    try:
+        return pd.read_csv(path), None
+    except pd.errors.EmptyDataError:
+        return None, f"{filename} has no columns/data yet. Run the daily pipeline to populate this table."
 
 
 def apply_min_numeric_filter(df: pd.DataFrame, column: str, minimum: float) -> pd.DataFrame:

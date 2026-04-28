@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 
 import pytest
 
 pd = pytest.importorskip("pandas")
+from app import streamlit_app
 from app.streamlit_app import apply_date_range_filter, apply_min_numeric_filter
 
 
@@ -31,3 +33,12 @@ def test_apply_date_range_filter_filters_dates() -> None:
     )
     out = apply_date_range_filter(df, "game_date", date(2024, 4, 10), date(2024, 4, 30))
     assert out["pitcher_name"].tolist() == ["B"]
+
+
+def test_load_output_csv_handles_empty_file(tmp_path: Path) -> None:
+    streamlit_app.OUTPUTS_DIR = tmp_path
+    empty_file = tmp_path / "content_ideas.csv"
+    empty_file.write_text("", encoding="utf-8")
+    df, message = streamlit_app.load_output_csv("content_ideas.csv")
+    assert df is None
+    assert "empty" in message.lower() or "no columns" in message.lower()
