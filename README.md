@@ -117,6 +117,38 @@ Install everything (convenience, but slowest):
 python -m pip install -e .[all]
 ```
 
+## Faster install option with `uv` (recommended for local dev)
+
+If `pip install` is slow on your machine, use `uv` as a drop-in package installer.
+
+1. Install `uv` once:
+
+```bash
+python -m pip install uv
+```
+
+2. Create and activate a virtual environment:
+
+```bash
+uv venv .venv
+source .venv/bin/activate   # Linux/macOS
+# .venv\Scripts\Activate.ps1  # Windows PowerShell
+```
+
+3. Install project dependencies with `uv`:
+
+```bash
+uv pip install -e .
+```
+
+Optional extras:
+
+```bash
+uv pip install -e .[dev]
+uv pip install -e .[ui]
+uv pip install -e .[all]
+```
+
 ## End-to-end quickstart (everything you need)
 
 1. Clone the repo and enter it.
