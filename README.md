@@ -156,6 +156,37 @@ uv pip install -e .[data]
 uv pip install -e .[all]
 ```
 
+### Troubleshooting local Windows install/runtime issues
+
+If you see:
+
+- `Access is denied (os error 5)` while `uv pip install -e ...` tries to remove `diamond_gems-0.1.0.dist-info`
+- followed by `ModuleNotFoundError: No module named 'diamond_gems'`
+
+that means the editable install did **not** complete, so the package is not available in the venv yet.
+
+Recommended fix sequence (PowerShell):
+
+```powershell
+deactivate
+Remove-Item -Recurse -Force .venv
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -U pip
+python -m pip install uv
+uv pip install -e .[data]
+python -m pytest
+python -m diamond_gems.run_daily --download-date 2026-04-27
+```
+
+If OneDrive or antivirus still locks files, move the repo to a non-synced local folder (for example `C:\dev\DiamondGems`) and retry.
+
+Helper script option (same flow automated):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\reset_venv.ps1 -Extras "data"
+```
+
 ## End-to-end quickstart (everything you need)
 
 1. Clone the repo and enter it.

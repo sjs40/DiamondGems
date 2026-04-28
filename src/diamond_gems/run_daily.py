@@ -36,6 +36,22 @@ from diamond_gems.transform.pitch_events import clean_pitch_events
 from diamond_gems.transform.pitch_type_summary import build_pitcher_pitch_type_summary
 from diamond_gems.transform.pitcher_start_summary import build_pitcher_start_summary
 
+PITCH_NAME_TO_TYPE = {
+    "4-seam fastball": "FF",
+    "sinker": "SI",
+    "cutter": "FC",
+    "slider": "SL",
+    "sweeper": "ST",
+    "curveball": "CU",
+    "knuckle curve": "KC",
+    "changeup": "CH",
+    "splitter": "FS",
+    "forkball": "FO",
+    "knuckleball": "KN",
+    "eephus": "EP",
+    "slurve": "SV",
+}
+
 
 class RecordFrame:
     """Minimal DataFrame-like container compatible with project helpers."""
@@ -90,6 +106,24 @@ def _coerce_basic_types(frame: RecordFrame) -> RecordFrame:
             rc[k] = v
         out.append(rc)
     return RecordFrame(out)
+
+
+def _normalize_raw_schema(frame: RecordFrame) -> RecordFrame:
+    """Normalize common source column aliases from external downloads."""
+    normalized = []
+    for row in frame.to_dict("records"):
+        row_copy = dict(row)
+
+        if row_copy.get("pitcher_throws") is None and row_copy.get("p_throws") is not None:
+            row_copy["pitcher_throws"] = row_copy.get("p_throws")
+
+        if row_copy.get("pitch_type") is None:
+            pitch_name = row_copy.get("pitch_name")
+            if isinstance(pitch_name, str):
+                row_copy["pitch_type"] = PITCH_NAME_TO_TYPE.get(pitch_name.strip().lower())
+
+        normalized.append(row_copy)
+    return RecordFrame(normalized)
 
 
 def build_pitcher_appearances(pitch_events) -> RecordFrame:
@@ -190,7 +224,9 @@ def main(argv: list[str] | None = None) -> int:
     if input_path is None or not input_path.exists():
         raise FileNotFoundError("No input CSV found. Provide --input-file or place CSV in data/raw.")
 
-    raw = _coerce_basic_types(_read_csv(input_path))
+    raw = _normalize_raw_schema(_coerce_basic_types(_read_csv(input_path)))
+    if not raw.to_dict("records"):
+        raise ValueError("Input CSV has no rows for processing.")
     if args.date:
         raw = RecordFrame([r for r in raw.to_dict("records") if str(r.get("game_date")) == args.date])
 

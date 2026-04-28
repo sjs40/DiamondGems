@@ -5,7 +5,7 @@ from pathlib import Path
 import importlib.util
 import pytest
 
-from diamond_gems.run_daily import main
+from diamond_gems.run_daily import RecordFrame, _normalize_raw_schema, main
 
 
 RAW_HEADER = [
@@ -59,3 +59,16 @@ def test_run_daily_rejects_input_file_and_download_date_together(tmp_path: Path)
 
     with pytest.raises(ValueError):
         main(["--input-file", str(raw_csv), "--download-date", "2024-04-01"])
+
+
+def test_normalize_raw_schema_maps_common_download_aliases() -> None:
+    raw = RecordFrame(
+        [
+            {"p_throws": "R", "pitch_name": "Slider", "pitch_type": None},
+            {"pitcher_throws": "L", "pitch_name": "Changeup", "pitch_type": None},
+        ]
+    )
+    normalized = _normalize_raw_schema(raw).to_dict("records")
+    assert normalized[0]["pitcher_throws"] == "R"
+    assert normalized[0]["pitch_type"] == "SL"
+    assert normalized[1]["pitch_type"] == "CH"
