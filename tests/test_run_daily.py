@@ -5,7 +5,7 @@ from pathlib import Path
 import importlib.util
 import pytest
 
-from diamond_gems.run_daily import RecordFrame, _normalize_raw_schema, main
+from diamond_gems.run_daily import RecordFrame, _normalize_raw_schema, build_pitcher_appearances, main
 
 
 RAW_HEADER = [
@@ -48,7 +48,7 @@ def test_run_daily_creates_expected_outputs_and_handles_empty_content(tmp_path: 
         "content_ideas.csv",
     ]
     if importlib.util.find_spec("pandas") is not None:
-        expected.append("baseball_content_dashboard.xlsx")
+        expected.extend(["baseball_content_dashboard.xlsx", "baseball_content_dashboard_visualization.xlsx"])
     for name in expected:
         assert (out_dir / name).exists()
 
@@ -72,3 +72,16 @@ def test_normalize_raw_schema_maps_common_download_aliases() -> None:
     assert normalized[0]["pitcher_throws"] == "R"
     assert normalized[0]["pitch_type"] == "SL"
     assert normalized[1]["pitch_type"] == "CH"
+
+
+def test_build_pitcher_appearances_assigns_start_number_by_pitcher_season() -> None:
+    pitch_events = RecordFrame([
+        {"appearance_id":"g1_1_Top","pitcher_id":1,"player_name":"P1","game_id":"g1","game_date":"2024-04-01","season":2024,"inning_topbot":"Top","away_team":"BOS","pa_terminal_flag":True},
+        {"appearance_id":"g2_1_Top","pitcher_id":1,"player_name":"P1","game_id":"g2","game_date":"2024-04-08","season":2024,"inning_topbot":"Top","away_team":"TOR","pa_terminal_flag":True},
+        {"appearance_id":"g3_1_Top","pitcher_id":1,"player_name":"P1","game_id":"g3","game_date":"2025-04-01","season":2025,"inning_topbot":"Top","away_team":"NYY","pa_terminal_flag":True},
+    ])
+    apps = build_pitcher_appearances(pitch_events).to_dict("records")
+    apps = sorted(apps, key=lambda r: (r["season"], r["game_date"]))
+    assert apps[0]["start_number_season"] == 1
+    assert apps[1]["start_number_season"] == 2
+    assert apps[2]["start_number_season"] == 1
