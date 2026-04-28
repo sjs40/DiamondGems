@@ -276,6 +276,13 @@ Downloaded raw files and generated outputs under `data/raw`, `data/processed`, a
 python -m streamlit run app/streamlit_app.py
 ```
 
+The app includes five analysis tabs:
+- Today's Gems
+- Pitcher Detail
+- Arsenal Changes
+- Flags
+- Content Ideas
+
 ## Output files
 
 After a successful daily run, `data/outputs/` includes (at minimum):
@@ -290,6 +297,7 @@ After a successful daily run, `data/outputs/` includes (at minimum):
 - `pitcher_flags.csv`
 - `content_ideas.csv`
 - `baseball_content_dashboard.xlsx`
+- `baseball_content_dashboard_visualization.xlsx` (adds `Daily Pitcher Board` and `Pitcher Detail Views`)
 
 ## Major use cases (with short output examples)
 
@@ -349,7 +357,11 @@ Pitcher A,video,high,draft,Why Pitcher A's slider is suddenly dominant
 
 Use case: Share a single multi-sheet file with non-technical users.
 
-Example output (`baseball_content_dashboard.xlsx` sheets):
+Example outputs:
+- `baseball_content_dashboard.xlsx` (core raw/data sheets)
+- `baseball_content_dashboard_visualization.xlsx` (front-facing dashboard layer + core sheets)
+
+`baseball_content_dashboard_visualization.xlsx` adds:
 
 ```text
 Start Summary
@@ -360,3 +372,26 @@ Trend Scores
 Flags
 Content Ideas
 ```
+
+## Baseline vs Recent + Archetypes
+
+`baseball_content_dashboard_visualization.xlsx` now includes baseline-aware layers:
+- `Daily Pitcher Board` (ranked with archetypes + baseline deltas)
+- `What Changed Today` (ranked daily movements)
+- `Pitcher Detail Views` (pitch-level current vs baseline context)
+
+Baseline calculations:
+- Season baseline uses prior appearances only (current game excluded).
+- Last3/Last5 baselines use prior 3/5 appearances only.
+- Sample warnings (`baseline_sample_warning`) indicate limited history.
+
+Archetypes supported:
+- `VELOCITY_RISER`, `VELOCITY_DROPPER`, `PITCH_MIX_CHANGER`, `WHIFF_GAINER`,
+  `COMMAND_RISK`, `COMMAND_GAINER`, `BAT_MISSING_BREAKOUT`, `USAGE_SPIKE`,
+  `POSSIBLE_FATIGUE`, `NO_CLEAR_ARCHETYPE`.
+
+Generate outputs:
+```bash
+python -m diamond_gems.run_daily --input-file data/raw/example_statcast.csv
+```
+This writes `baseball_content_dashboard_visualization.xlsx` to `data/outputs/`.

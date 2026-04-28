@@ -48,7 +48,7 @@ def test_run_daily_creates_expected_outputs_and_handles_empty_content(tmp_path: 
         "content_ideas.csv",
     ]
     if importlib.util.find_spec("pandas") is not None:
-        expected.append("baseball_content_dashboard.xlsx")
+        expected.extend(["baseball_content_dashboard.xlsx", "baseball_content_dashboard_visualization.xlsx"])
     for name in expected:
         assert (out_dir / name).exists()
 
