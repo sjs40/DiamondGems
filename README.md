@@ -1,2 +1,362 @@
 # DiamondGems
-System to find interesting baseball players
+
+DiamondGems is a Python analytics pipeline that identifies **content-worthy MLB pitcher signals** from pitch-level data.
+
+## Project purpose
+
+The goal of this MVP is to take raw Statcast-like pitch event data and produce:
+
+- cleaned event-level analytics tables,
+- pitcher-start and pitch-type summaries,
+- signal/flag outputs for noteworthy pitcher changes,
+- content ideas for downstream editorial workflows,
+- and analyst-friendly artifacts (CSV, Parquet, and Excel dashboard workbook).
+
+## What the system finds
+
+The MVP computes pitcher-focused signals such as:
+
+- velocity deltas,
+- pitch usage deltas,
+- pitch effectiveness deltas,
+- arsenal concentration / pitch mix volatility,
+- opponent-adjusted context,
+- trend scoring,
+- confidence/stability-supporting metrics,
+- pitcher flags and content ideas.
+
+## Scope (MVP)
+
+- **Pitchers only** in the MVP.
+- **Hitters will be added later** in a future version.
+- Trend/flag scoring currently uses **manual placeholder weights** to keep the MVP transparent and testable; **learned/model-based weights are planned for a later version**.
+
+## Project layout
+
+```text
+DiamondGems/
+  AGENTS.md
+  README.md
+  pyproject.toml
+  data/
+    raw/
+    processed/
+    outputs/
+  src/
+    diamond_gems/
+      __init__.py
+      config.py
+      constants.py
+      validation.py
+      run_daily.py
+      ingest/
+        __init__.py
+      transform/
+        __init__.py
+        pitch_events.py
+        pitcher_start_summary.py
+        pitch_type_summary.py
+      features/
+        __init__.py
+        *.py
+      outputs/
+        __init__.py
+        export.py
+        excel_export.py
+        flags.py
+        content_ideas.py
+  app/
+    streamlit_app.py
+  tests/
+    test_*.py
+```
+
+## Design choices for faster installs and cleaner structure
+
+- Core runtime dependencies are kept small so `pip install -e .` is faster for pipeline-only usage.
+- Dev/test tools (`pytest`, `ruff`) are in the `dev` extra.
+- Streamlit is in a separate `ui` extra so headless/CLI-only users do not pay UI install cost.
+- Module boundaries follow data grain and responsibility (transform vs features vs outputs vs app).
+
+## Windows setup instructions
+
+1. Create a virtual environment:
+   - `python -m venv .venv`
+2. Activate it (PowerShell):
+   - `.venv\Scripts\Activate.ps1`
+3. If execution policy blocks activation, run (PowerShell as needed):
+   - `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+4. Upgrade pip (recommended):
+   - `python -m pip install --upgrade pip`
+
+If `python` is not found on your machine, use `py` instead of `python` in all commands below.
+
+## Install dependencies
+
+Fastest install (pipeline only, no test/UI extras):
+
+```bash
+python -m pip install -e .
+```
+
+Install dev/test tools only when needed:
+
+```bash
+python -m pip install -e .[dev]
+```
+
+Install Streamlit UI dependencies only when needed:
+
+```bash
+python -m pip install -e .[ui]
+```
+
+Install download helper dependencies (pybaseball) when needed:
+
+```bash
+python -m pip install -e .[data]
+```
+
+Install everything (convenience, but slowest):
+
+```bash
+python -m pip install -e .[all]
+```
+
+## Faster install option with `uv` (recommended for local dev)
+
+If `pip install` is slow on your machine, use `uv` as a drop-in package installer.
+
+1. Install `uv` once:
+
+```bash
+python -m pip install uv
+```
+
+2. Create and activate a virtual environment:
+
+```bash
+uv venv .venv
+source .venv/bin/activate   # Linux/macOS
+# .venv\Scripts\Activate.ps1  # Windows PowerShell
+```
+
+3. Install project dependencies with `uv`:
+
+```bash
+uv pip install -e .
+```
+
+Optional extras:
+
+```bash
+uv pip install -e .[dev]
+uv pip install -e .[ui]
+uv pip install -e .[data]
+uv pip install -e .[all]
+```
+
+### Troubleshooting local Windows install/runtime issues
+
+If you see:
+
+- `Access is denied (os error 5)` while `uv pip install -e ...` tries to remove `diamond_gems-0.1.0.dist-info`
+- followed by `ModuleNotFoundError: No module named 'diamond_gems'`
+
+that means the editable install did **not** complete, so the package is not available in the venv yet.
+
+Recommended fix sequence (PowerShell):
+
+```powershell
+deactivate
+Remove-Item -Recurse -Force .venv
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -U pip
+python -m pip install uv
+uv pip install -e .[data]
+python -m pytest
+python -m diamond_gems.run_daily --download-date 2026-04-27
+```
+
+If OneDrive or antivirus still locks files, move the repo to a non-synced local folder (for example `C:\dev\DiamondGems`) and retry.
+
+Helper script option (same flow automated):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\reset_venv.ps1 -Extras "data"
+```
+
+## End-to-end quickstart (everything you need)
+
+1. Clone the repo and enter it.
+2. Create/activate a virtual environment (see Windows section above).
+3. Install dependencies:
+   - `python -m pip install -e .`
+4. Get pitch-level input data (see **Data download / input prep** below), or use automated download with `--download-date`.
+5. Put your CSV in `data/raw/` (example: `data/raw/example_statcast.csv`) if using manual input mode.
+6. Run tests:
+   - `python -m pytest`
+7. Run the daily pipeline:
+   - `python -m diamond_gems.run_daily --input-file data/raw/example_statcast.csv`
+8. Open generated files under `data/outputs/`.
+9. Launch Streamlit:
+   - `python -m streamlit run app/streamlit_app.py`
+
+## Data download / input prep
+
+This repo does **not** currently auto-download MLB data. For MVP, you bring a Statcast-like CSV and place it in `data/raw/`.
+
+> Update: you can now optionally auto-download a lookback window ending on a day using `--download-date YYYY-MM-DD`.
+> If MLB blocks automated requests (for example HTTP 403), export manually from Baseball Savant and use `--input-file`.
+
+### Option A: Manual CSV export (Baseball Savant UI)
+
+1. Go to Baseball Savant search/export tools.
+2. Choose a date range and filters you want.
+3. Export pitch-level CSV.
+4. Save it as `data/raw/example_statcast.csv`.
+
+### Option B: Script your own download (example approach)
+
+Use your preferred data tool (for example, `pybaseball`) to generate a CSV with the required columns.
+
+```python
+# Example only (run separately, not part of package runtime)
+from pybaseball import statcast
+
+df = statcast(start_dt="2024-04-01", end_dt="2024-04-07")
+df.to_csv("data/raw/example_statcast.csv", index=False)
+```
+
+### Required columns in the input CSV
+
+Your CSV should include the MVP-required raw fields (for example):
+
+`game_pk, game_date, pitcher, batter, player_name, pitcher_throws, pitch_type, pitch_name, release_speed, release_spin_rate, release_extension, pfx_x, pfx_z, plate_x, plate_z, zone, description, events, launch_speed, launch_angle, estimated_woba_using_speedangle, woba_value, inning, inning_topbot, balls, strikes, outs_when_up, home_team, away_team, post_home_score, post_away_score`
+
+## Run tests
+
+```bash
+python -m pytest
+```
+
+## Run the daily pipeline
+
+```bash
+python -m diamond_gems.run_daily --input-file data/raw/example_statcast.csv
+```
+
+Automated download mode (single day):
+
+```bash
+python -m diamond_gems.run_daily --download-date 2024-04-07
+```
+
+By default this downloads a 120-day history ending on that date (for prior-start baselines), then exports rows for the target date.
+
+Choose provider explicitly when needed:
+
+```bash
+python -m diamond_gems.run_daily --download-date 2024-04-07 --download-provider auto
+python -m diamond_gems.run_daily --download-date 2024-04-07 --download-provider savant
+python -m diamond_gems.run_daily --download-date 2024-04-07 --download-provider pybaseball
+python -m diamond_gems.run_daily --download-date 2024-04-07 --download-lookback-days 180
+```
+
+`auto` tries Baseball Savant first, then falls back to `pybaseball` if Savant is blocked.
+
+## Data versioning policy
+
+Downloaded raw files and generated outputs under `data/raw`, `data/processed`, and `data/outputs` are intentionally git-ignored so local data artifacts are not committed.
+
+## Run Streamlit
+
+```bash
+python -m streamlit run app/streamlit_app.py
+```
+
+## Output files
+
+After a successful daily run, `data/outputs/` includes (at minimum):
+
+- `pitcher_start_summary.csv`
+- `pitcher_start_summary.parquet`
+- `pitcher_pitch_type_summary.csv`
+- `pitcher_pitch_type_summary.parquet`
+- `pitcher_velocity_deltas.csv`
+- `pitcher_usage_deltas.csv`
+- `pitcher_trend_scores.csv`
+- `pitcher_flags.csv`
+- `content_ideas.csv`
+- `baseball_content_dashboard.xlsx`
+
+## Major use cases (with short output examples)
+
+### 1) Daily pitcher monitoring for notable changes
+
+Use case: Identify pitchers whose velocity/usage/effectiveness changed meaningfully in the most recent outing.
+
+Command:
+
+```bash
+python -m diamond_gems.run_daily --input-file data/raw/example_statcast.csv
+```
+
+Example output (`pitcher_flags.csv`):
+
+```text
+pitcher_name,signal_category,severity,confidence_score,flag_reason
+Pitcher A,velocity,high,0.82,Fastball velo +1.6 mph vs baseline
+Pitcher B,usage,medium,0.68,Slider usage +10 percentage points
+```
+
+### 2) Pitch-shape and mix review by pitch type
+
+Use case: Review per outing + pitch type metrics for pitch planning or content notes.
+
+Example output (`pitcher_pitch_type_summary.csv`):
+
+```text
+pitcher_name,game_date,pitch_type,pitch_count,usage_rate,avg_velocity,whiff_rate
+Pitcher A,2024-04-07,FF,52,0.48,96.1,0.31
+Pitcher A,2024-04-07,SL,28,0.26,86.4,0.42
+```
+
+### 3) Start-level performance recap
+
+Use case: Summarize each pitcher start in one row for quick reporting.
+
+Example output (`pitcher_start_summary.csv`):
+
+```text
+pitcher_name,game_date,opponent_team_id,pitches_thrown,batters_faced,k_rate,bb_rate,xwoba_allowed
+Pitcher A,2024-04-07,BOS,94,25,0.32,0.08,0.281
+```
+
+### 4) Content planning workflow
+
+Use case: Turn model-detected flags into publishable ideas.
+
+Example output (`content_ideas.csv`):
+
+```text
+pitcher_name,content_format,confidence,status,headline
+Pitcher A,video,high,draft,Why Pitcher A's slider is suddenly dominant
+```
+
+### 5) Analyst handoff workbook export
+
+Use case: Share a single multi-sheet file with non-technical users.
+
+Example output (`baseball_content_dashboard.xlsx` sheets):
+
+```text
+Start Summary
+Pitch Type Summary
+Velocity Deltas
+Usage Deltas
+Trend Scores
+Flags
+Content Ideas
+```

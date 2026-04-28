@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "diamond-gems"
+version = "0.1.0"
+description = "Scaffold for a daily baseball data workflow project."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "pandas",
+  "numpy",
+  "pyarrow",
+  "openpyxl",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "ruff",
+]
+ui = [
+  "streamlit",
+]
+data = [
+  "pybaseball",
+]
+all = [
+  "pytest",
+  "ruff",
+  "streamlit",
+  "pybaseball",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
