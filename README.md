@@ -253,7 +253,7 @@ Automated download mode (single day):
 python -m diamond_gems.run_daily --download-date 2024-04-07
 ```
 
-By default this downloads a 120-day history ending on that date (for prior-start baselines), then exports rows for the target date.
+By default this downloads a 30-day history ending on that date (for prior-start baselines), then exports rows for the target date.
 
 Choose provider explicitly when needed:
 

@@ -213,7 +213,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--date", type=str, default=None)
     parser.add_argument("--download-date", type=str, default=None)
     parser.add_argument("--download-provider", type=str, default="auto")
-    parser.add_argument("--download-lookback-days", type=int, default=120)
+    parser.add_argument("--download-lookback-days", type=int, default=30)
     args = parser.parse_args(argv)
 
     if args.download_date and args.input_file:
