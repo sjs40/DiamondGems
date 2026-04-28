@@ -207,7 +207,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\reset_venv.ps1 -Extras "data"
 
 This repo does **not** currently auto-download MLB data. For MVP, you bring a Statcast-like CSV and place it in `data/raw/`.
 
-> Update: you can now optionally auto-download one day of data from the runner using `--download-date YYYY-MM-DD`.
+> Update: you can now optionally auto-download a lookback window ending on a day using `--download-date YYYY-MM-DD`.
 > If MLB blocks automated requests (for example HTTP 403), export manually from Baseball Savant and use `--input-file`.
 
 ### Option A: Manual CSV export (Baseball Savant UI)
@@ -253,7 +253,7 @@ Automated download mode (single day):
 python -m diamond_gems.run_daily --download-date 2024-04-07
 ```
 
-This downloads `data/raw/statcast_2024-04-07.csv` and runs the pipeline on that file.
+By default this downloads a 30-day history ending on that date (for prior-start baselines), then exports rows for the target date.
 
 Choose provider explicitly when needed:
 
@@ -261,9 +261,14 @@ Choose provider explicitly when needed:
 python -m diamond_gems.run_daily --download-date 2024-04-07 --download-provider auto
 python -m diamond_gems.run_daily --download-date 2024-04-07 --download-provider savant
 python -m diamond_gems.run_daily --download-date 2024-04-07 --download-provider pybaseball
+python -m diamond_gems.run_daily --download-date 2024-04-07 --download-lookback-days 180
 ```
 
 `auto` tries Baseball Savant first, then falls back to `pybaseball` if Savant is blocked.
+
+## Data versioning policy
+
+Downloaded raw files and generated outputs under `data/raw`, `data/processed`, and `data/outputs` are intentionally git-ignored so local data artifacts are not committed.
 
 ## Run Streamlit
 

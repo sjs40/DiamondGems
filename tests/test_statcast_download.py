@@ -37,7 +37,7 @@ def test_download_statcast_csv_for_date_writes_file(monkeypatch, tmp_path: Path)
     output_path = download_statcast_csv_for_date("2024-04-01", output_dir=tmp_path)
     assert output_path.exists()
     assert output_path.name == "statcast_2024-04-01.csv"
-    assert "game_date_gt=2024-04-01" in captured["url"]
+    assert "game_date_gt=2023-12-03" in captured["url"]
     assert "game_date_lt=2024-04-01" in captured["url"]
 
 
@@ -67,11 +67,11 @@ def test_download_statcast_csv_for_date_http_error_has_helpful_message(monkeypat
 def test_download_statcast_csv_for_date_auto_falls_back_to_pybaseball(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(
         "diamond_gems.ingest.statcast_download._download_via_savant",
-        lambda normalized_date: (_ for _ in ()).throw(RuntimeError("blocked")),
+        lambda start_date, end_date: (_ for _ in ()).throw(RuntimeError("blocked")),
     )
     monkeypatch.setattr(
         "diamond_gems.ingest.statcast_download._download_via_pybaseball",
-        lambda normalized_date: b"game_pk,game_date\n2,2024-04-01\n",
+        lambda start_date, end_date: b"game_pk,game_date\n2,2024-04-01\n",
     )
 
     output_path = download_statcast_csv_for_date("2024-04-01", output_dir=tmp_path, provider="auto")
@@ -81,6 +81,18 @@ def test_download_statcast_csv_for_date_auto_falls_back_to_pybaseball(monkeypatc
 def test_download_statcast_csv_for_date_rejects_unknown_provider(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="Unknown provider"):
         download_statcast_csv_for_date("2024-04-01", output_dir=tmp_path, provider="unknown")
+
+
+def test_download_statcast_csv_for_date_respects_lookback_days(monkeypatch, tmp_path: Path) -> None:
+    captured = {"url": ""}
+
+    def _fake_urlopen(request):
+        captured["url"] = request.full_url
+        return _FakeResponse(b"game_pk,game_date\n1,2024-04-01\n")
+
+    monkeypatch.setattr("diamond_gems.ingest.statcast_download.urlopen", _fake_urlopen)
+    download_statcast_csv_for_date("2024-04-01", output_dir=tmp_path, lookback_days=7)
+    assert "game_date_gt=2024-03-25" in captured["url"]
 
 
 def test_download_statcast_csv_for_date_validates_date(tmp_path: Path) -> None:

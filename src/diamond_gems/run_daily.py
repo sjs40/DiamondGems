@@ -201,6 +201,11 @@ def _restore_pitch_columns(raw: RecordFrame, pitch_events: RecordFrame) -> Recor
     return RecordFrame(merged)
 
 
+def _filter_table_by_game_date(table: RecordFrame, target_date: str) -> RecordFrame:
+    rows = [r for r in table.to_dict("records") if str(r.get("game_date")) == target_date]
+    return RecordFrame(rows)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run DiamondGems MVP daily pipeline")
     parser.add_argument("--input-file", type=str, default=None)
@@ -208,6 +213,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--date", type=str, default=None)
     parser.add_argument("--download-date", type=str, default=None)
     parser.add_argument("--download-provider", type=str, default="auto")
+    parser.add_argument("--download-lookback-days", type=int, default=30)
     args = parser.parse_args(argv)
 
     if args.download_date and args.input_file:
@@ -218,6 +224,7 @@ def main(argv: list[str] | None = None) -> int:
             args.download_date,
             output_dir=RAW_DIR,
             provider=args.download_provider,
+            lookback_days=args.download_lookback_days,
         )
     else:
         input_path = Path(args.input_file) if args.input_file else _find_latest_csv(RAW_DIR)
@@ -227,8 +234,7 @@ def main(argv: list[str] | None = None) -> int:
     raw = _normalize_raw_schema(_coerce_basic_types(_read_csv(input_path)))
     if not raw.to_dict("records"):
         raise ValueError("Input CSV has no rows for processing.")
-    if args.date:
-        raw = RecordFrame([r for r in raw.to_dict("records") if str(r.get("game_date")) == args.date])
+    target_output_date = args.date or args.download_date
 
     pitch_events = clean_pitch_events(raw)
     pitch_events = _restore_pitch_columns(raw, pitch_events)
@@ -280,6 +286,17 @@ def main(argv: list[str] | None = None) -> int:
         primary_pitch_quality_gap,
     )
     content_ideas = build_content_ideas(pitcher_flags)
+
+    if target_output_date:
+        pitch_events = _filter_table_by_game_date(pitch_events, target_output_date)
+        appearances = _filter_table_by_game_date(appearances, target_output_date)
+        pitcher_start_summary = _filter_table_by_game_date(pitcher_start_summary, target_output_date)
+        pitcher_pitch_type_summary = _filter_table_by_game_date(pitcher_pitch_type_summary, target_output_date)
+        pitcher_velocity_deltas = _filter_table_by_game_date(pitcher_velocity_deltas, target_output_date)
+        pitcher_usage_deltas = _filter_table_by_game_date(pitcher_usage_deltas, target_output_date)
+        pitcher_trend_scores = _filter_table_by_game_date(pitcher_trend_scores, target_output_date)
+        pitcher_flags = _filter_table_by_game_date(pitcher_flags, target_output_date)
+        content_ideas = _filter_table_by_game_date(content_ideas, target_output_date)
 
     if args.output_dir:
         import diamond_gems.outputs.export as export_mod
