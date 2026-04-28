@@ -67,3 +67,12 @@ def test_velocity_deltas_baselines_and_flags() -> None:
 
     # input should not mutate
     assert input_df.to_dict("records") == original_rows
+
+
+def test_velocity_deltas_handles_missing_appearance_id_without_sort_crash() -> None:
+    rows = [
+        {"appearance_id": None, "pitcher_id": 1, "pitch_type": "FF", "game_date": "2024-04-01", "season": 2024, "avg_velocity": 95.0, "pitch_count": 10, "low_sample_flag": False},
+        {"appearance_id": "a2", "pitcher_id": 1, "pitch_type": "FF", "game_date": "2024-04-01", "season": 2024, "avg_velocity": 96.0, "pitch_count": 11, "low_sample_flag": False},
+    ]
+    output_rows = build_pitcher_velocity_deltas(FakeDataFrame(rows)).to_dict("records")
+    assert len(output_rows) == 2
