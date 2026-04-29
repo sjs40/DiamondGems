@@ -46,3 +46,16 @@ def test_what_changed_ranking_and_missing_cols_safe():
     summary, text = build_what_changed_today_summary(tagged)
     assert not summary.empty
     assert "strongest signal" in text.lower() or "no strong" in text.lower()
+
+
+def test_baseline_grouped_by_season_and_excludes_current_game() -> None:
+    starts = pd.DataFrame([
+        {"pitcher_id": 10, "pitcher_name": "A", "season": 2024, "game_date": "2024-04-01", "avg_fastball_velo": 95.0},
+        {"pitcher_id": 10, "pitcher_name": "A", "season": 2024, "game_date": "2024-04-10", "avg_fastball_velo": 96.0},
+        {"pitcher_id": 10, "pitcher_name": "A", "season": 2025, "game_date": "2025-04-01", "avg_fastball_velo": 94.0},
+    ])
+    out = add_baseline_recent_features(starts)
+    row_2025 = out[out["season"] == 2025].iloc[0]
+    assert pd.isna(row_2025["avg_fastball_velo_season_baseline"])
+    row_2024_2 = out[(out["season"] == 2024) & (out["game_date"] == "2024-04-10")].iloc[0]
+    assert row_2024_2["avg_fastball_velo_season_baseline"] == 95.0

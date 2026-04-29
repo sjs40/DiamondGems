@@ -36,13 +36,17 @@ def calculate_pitcher_baselines(starts_df: pd.DataFrame) -> pd.DataFrame:
             raise ValueError(f"Missing required column: {c}")
     df = starts_df.copy()
     df["game_date"] = pd.to_datetime(df["game_date"], errors="coerce")
-    df = df.sort_values(["pitcher_name", "game_date"]).reset_index(drop=True)
+    if "season" not in df.columns:
+        df["season"] = df["game_date"].dt.year
+    pitcher_key = "pitcher_id" if "pitcher_id" in df.columns else "pitcher_name"
+    group_cols = [pitcher_key, "season"]
+    df = df.sort_values(group_cols + ["game_date", "game_id" if "game_id" in df.columns else "pitcher_name"]).reset_index(drop=True)
     metrics = [c for c in ["avg_fastball_velo", "avg_pitch_velo", "whiff_rate", "csw_rate", "chase_rate", "zone_rate", "called_strike_rate", "k_rate", "bb_rate", "k_minus_bb_rate", "strike_rate", "pitches_thrown", "innings_pitched", "earned_runs", "hard_hit_rate_allowed", "barrel_rate_allowed", "xwoba_allowed"] if c in df.columns]
     for c in ["whiff_rate", "csw_rate", "chase_rate", "zone_rate", "called_strike_rate", "k_rate", "bb_rate", "k_minus_bb_rate", "strike_rate", "usage_rate"]:
         if c in df.columns:
             df[c] = _normalize_pct(df[c])
 
-    g = df.groupby("pitcher_name", dropna=False)
+    g = df.groupby(group_cols, dropna=False)
     df["season_baseline_games"] = g.cumcount()
     for m in metrics:
         df[f"{m}_season_baseline"] = g[m].transform(lambda s: s.shift(1).expanding().mean())
@@ -51,7 +55,9 @@ def calculate_pitcher_baselines(starts_df: pd.DataFrame) -> pd.DataFrame:
 
 def calculate_recent_windows(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
-    g = out.groupby("pitcher_name", dropna=False)
+    pitcher_key = "pitcher_id" if "pitcher_id" in out.columns else "pitcher_name"
+    group_cols = [pitcher_key, "season"]
+    g = out.groupby(group_cols, dropna=False)
     out["last3_games"] = g.cumcount().clip(upper=3)
     out["last5_games"] = g.cumcount().clip(upper=5)
     metric_cols = [c for c in out.columns if c.endswith("_season_baseline")]

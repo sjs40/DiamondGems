@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 
 from diamond_gems.config import DATA_OUTPUTS_DIR, RAW_DIR
@@ -126,6 +127,31 @@ def _normalize_raw_schema(frame: RecordFrame) -> RecordFrame:
     return RecordFrame(normalized)
 
 
+
+
+def _season_from_game_date(game_date, fallback):
+    if fallback not in (None, ""):
+        try:
+            return int(fallback)
+        except Exception:
+            pass
+    if game_date in (None, ""):
+        return None
+    try:
+        return datetime.strptime(str(game_date)[:10], "%Y-%m-%d").year
+    except Exception:
+        return None
+
+
+def _assign_start_number_season(rows: list[dict]) -> list[dict]:
+    sorted_rows = sorted(rows, key=lambda r: (str(r.get("pitcher_id")), str(r.get("season")), str(r.get("game_date")), str(r.get("game_id"))))
+    counters = {}
+    for row in sorted_rows:
+        key = (row.get("pitcher_id"), row.get("season"))
+        counters[key] = counters.get(key, 0) + 1
+        row["start_number_season"] = counters[key]
+    return sorted_rows
+
 def build_pitcher_appearances(pitch_events) -> RecordFrame:
     """Simple MVP appearance builder (one row per appearance_id)."""
     rows = pitch_events.to_dict("records")
@@ -151,19 +177,19 @@ def build_pitcher_appearances(pitch_events) -> RecordFrame:
                 "pitcher_name": g0.get("player_name"),
                 "game_id": g0.get("game_id"),
                 "game_date": g0.get("game_date"),
-                "season": g0.get("season"),
+                "season": _season_from_game_date(g0.get("game_date"), g0.get("season")),
                 "opponent_team_id": opponent,
                 "opponent_team_abbr": opponent,
                 "pitcher_throws": g0.get("pitcher_throws"),
                 "role": "SP",
-                "start_number_season": 1,
+                "start_number_season": None,
                 "pitches_thrown": len(group),
                 "batters_faced": batters_faced,
                 "innings_pitched": 0.0,
             }
         )
 
-    return RecordFrame(appearances)
+    return RecordFrame(_assign_start_number_season(appearances))
 
 
 def _find_latest_csv(raw_dir: Path) -> Path | None:
